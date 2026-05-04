@@ -34,7 +34,3 @@ All 9 cards are driven by [`data/sources.json`](data/sources.json). Each entry c
 - `description` — the text shown when a card is expanded
 
 The hero's composite score (73.4 by default) and the 30-day sparkline are hardcoded in `app/Dashboard.tsx` and can be updated there alongside the KPI change values (`+2.1 pts`, `+11.4 pts`).
-
-## Deploy
-
-Import the repo into [Vercel](https://vercel.com) — it auto-detects Next.js static export. No environment variables needed. The `out/` directory is gitignored (Vercel builds from source).
