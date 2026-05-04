@@ -240,7 +240,7 @@ export default function Dashboard({ sources }: { sources: Source[] }) {
 
       <footer className="site-footer">
         <div className="footer-note">P-INDEX IS AN INDEPENDENT COMPOSITE METRIC. DATA SOURCED FROM PUBLICLY AVAILABLE RESEARCH, INDICES, AND STATISTICAL AGENCIES. NOT AFFILIATED WITH ANY GOVERNMENT OR INSTITUTION.</div>
-        <div>P-INDEX © 2024</div>
+        <div>P-INDEX © 2026</div>
       </footer>
     </>
   );
