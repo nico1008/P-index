@@ -1,7 +1,7 @@
-import sources from '../data/sources.json';
+import release from '../data/sources.json';
 import Dashboard from './Dashboard';
-import type { Source } from './types';
+import type { Release } from './types';
 
 export default function Page() {
-  return <Dashboard sources={sources as Source[]} />;
+  return <Dashboard release={release as Release} />;
 }

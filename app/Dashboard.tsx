@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Source } from './types';
+import type { Release, Source } from './types';
 import { ChartRouter } from './charts';
 import { DataSectionBg, HeroBg, MethodSectionBg } from './decorations';
 
@@ -13,12 +13,34 @@ function scoreClass(s: number) {
   return s >= 75 ? 'score-hi' : s >= 55 ? 'score-md' : 'score-lo';
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function fmtDate(iso: string) {
+  const [y, m, d] = iso.split('-');
+  return `${parseInt(d, 10)} ${MONTHS[parseInt(m, 10) - 1]} ${y}`;
+}
+
+function fmtRelative(iso: string) {
+  if (!iso) return '';
+  const then = new Date(iso + 'T00:00:00Z').getTime();
+  const now = Date.now();
+  const days = Math.round((now - then) / 86400000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days} days ago`;
+  if (days < 365) return `${Math.round(days / 30)} mo ago`;
+  return `${Math.round(days / 365)} yr ago`;
+}
+
 function Card({ src, open, onToggle }: { src: Source; open: boolean; onToggle: () => void }) {
   return (
     <div className={`card${open ? ' open' : ''}`} onClick={onToggle}>
       <div className="card-top">
         <span className="card-name">{src.name}</span>
-        <span className="card-wt">×{src.weight}%</span>
+        <div className="card-meta">
+          <span className={`cadence-tag cadence-${src.cadence}`}>{src.cadence}</span>
+          <span className="card-wt">×{src.weight}%</span>
+        </div>
       </div>
       <div className="card-sublabel">{src.label}</div>
       <div className="card-score-row">
@@ -29,9 +51,25 @@ function Card({ src, open, onToggle }: { src: Source; open: boolean; onToggle: (
         </span>
       </div>
       <ChartRouter src={src} />
+      <div className="card-source-line">
+        <span className="card-source">{src.sourceName}</span>
+        <span className="card-sep">·</span>
+        <span className="card-fetched">{fmtRelative(src.lastFetched)}</span>
+        {src.staleSince && <span className="stale-tag">stale</span>}
+      </div>
       {open && (
         <div className="expand-section">
-          <div>{src.description}</div>
+          <div className="why-matters">{src.whyItMatters}</div>
+          <div className="card-desc">{src.description}</div>
+          <a
+            className="card-source-link"
+            href={src.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Source · {src.sourceName} →
+          </a>
         </div>
       )}
       <span className="card-arrow">{open ? '▲' : '▼'}</span>
@@ -69,7 +107,7 @@ function HeroSidebar({ sources }: { sources: Source[] }) {
 
   return (
     <div>
-      <div className="hero-sidebar-title">30-DAY TREND</div>
+      <div className="hero-sidebar-title">RECENT TREND</div>
       <svg viewBox={`0 0 ${sparkW} ${sparkH}`} style={{ width: '100%', height: sparkH, display: 'block', marginBottom: 14 }}>
         <polyline points={sparkPts} fill="none" stroke={RED} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         {spark.map((v, i) => {
@@ -98,16 +136,11 @@ function HeroSidebar({ sources }: { sources: Source[] }) {
   );
 }
 
-export default function Dashboard({ sources }: { sources: Source[] }) {
-  const [pIndex, setPIndex] = useState(73.4);
+export default function Dashboard({ release }: { release: Release }) {
+  const sources = release.sources;
+  const [pIndex, setPIndex] = useState(release.composite);
   const [displayVal, setDisplayVal] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLastUpdated(new Date());
-  }, []);
 
   useEffect(() => {
     let frame: number;
@@ -126,22 +159,17 @@ export default function Dashboard({ sources }: { sources: Source[] }) {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setRefreshing(true);
-      setTimeout(() => {
-        setPIndex((v) => parseFloat(Math.max(60, Math.min(90, v + (Math.random() - 0.48) * 0.8)).toFixed(1)));
-        setLastUpdated(new Date());
-        setRefreshing(false);
-      }, 1400);
+      setPIndex((v) => parseFloat(Math.max(0, Math.min(100, v + (Math.random() - 0.48) * 0.8)).toFixed(1)));
     }, 18000);
     return () => clearInterval(id);
   }, []);
 
-  const fmt = (d: Date) =>
-    d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const intPart = Math.floor(displayVal).toString().padStart(2, '0');
   const decDigit = Math.round((displayVal % 1) * 10);
   const label =
     pIndex >= 80 ? 'SEVERE' : pIndex >= 60 ? 'CRITICAL' : pIndex >= 40 ? 'CONCERNING' : pIndex >= 20 ? 'MODERATE' : 'OPTIMAL';
+
+  const wiredCount = sources.filter((s) => !s.staleSince && (s.id === 'gdp' || s.id === 'ruble' || s.id === 'news')).length;
 
   return (
     <>
@@ -151,15 +179,14 @@ export default function Dashboard({ sources }: { sources: Source[] }) {
           P-INDEX SYSTEM · RUSSIA
         </div>
         <div className="header-right">
-          LAST UPDATED: {lastUpdated ? fmt(lastUpdated) : '—'}
-          {refreshing && <span className="updating">UPDATING</span>}
+          AUTO-REFRESH DAILY · LAST RUN {fmtDate(release.releaseDate)}
         </div>
       </header>
 
       <section className="hero">
         <HeroBg />
         <div className="hero-content">
-          <div className="eyebrow">COMPOSITE SCORE — QUALITY OF LIFE IN RUSSIA</div>
+          <div className="eyebrow">P-INDEX · DAILY REFRESH 02:00 UTC</div>
           <div className="hero-row">
             <div className="big-num">
               <span>{intPart}</span>
@@ -173,16 +200,20 @@ export default function Dashboard({ sources }: { sources: Source[] }) {
                 {label}
               </div>
               <div className="hero-desc">
-                Tracks {sources.length} economic, social, and press-freedom indicators to measure how life in Russia is changing — month over month.
+                Daily-refreshed read of civilian conditions in Russia — economy, sentiment, press, mobility — beyond the official numbers. Higher = more distress.
               </div>
               <div className="kpi-row">
                 <div className="kpi">
-                  <span className="kpi-label">30-day change</span>
-                  <span className="kpi-val bad"><span className="delta-arrow">↑</span>+2.1 pts</span>
+                  <span className="kpi-label">Indicators</span>
+                  <span className="kpi-val">{sources.length}</span>
                 </div>
                 <div className="kpi">
-                  <span className="kpi-label">1-year change</span>
-                  <span className="kpi-val bad"><span className="delta-arrow">↑</span>+11.4 pts</span>
+                  <span className="kpi-label">Live-wired</span>
+                  <span className="kpi-val">{wiredCount} / {sources.length}</span>
+                </div>
+                <div className="kpi">
+                  <span className="kpi-label">Refreshed</span>
+                  <span className="kpi-val">{fmtRelative(release.releaseDate).toUpperCase()}</span>
                 </div>
               </div>
             </div>
@@ -223,10 +254,31 @@ export default function Dashboard({ sources }: { sources: Source[] }) {
           <MethodSectionBg />
           <div className="method-grid">
             {[
-              { n: '01', title: 'DATA COLLECTION', desc: 'Raw signals pulled from open-source APIs, NGO datasets, press freedom indices, emigration registries, and independent research. Updated continuously.' },
-              { n: '02', title: 'NORMALIZATION', desc: 'Each source normalized to a 0–100 subscale using percentile mapping against a 1991–2024 baseline. Inverse metrics are mirrored accordingly.' },
-              { n: '03', title: 'WEIGHTING', desc: 'Sources weighted by data reliability, recency, and structural importance. Weights reviewed quarterly and adjusted for new data availability.' },
-              { n: '04', title: 'COMPOSITE SCORE', desc: 'Weighted average of all subscores yields the final P-Index. Rolling 30-day smoothing is applied to reduce noise from single-event outliers.' },
+              {
+                n: '01',
+                title: 'INPUTS',
+                desc: '9 indicators across economy, sentiment, press, and mobility. Each card links to its primary public source. Cadence varies — daily for FX and tone, monthly for inflation and polls, annual for Heritage and RSF.',
+              },
+              {
+                n: '02',
+                title: 'TRANSFORMATIONS',
+                desc: 'Each indicator → 0–100 by an explicit formula in scripts/compute.mjs. Inflation: clamp((cpi − 2) ÷ 18 × 100, 0, 100). Ruble: clamp((rate − 60) ÷ 60 × 100, 0, 100). No hidden percentile mapping.',
+              },
+              {
+                n: '03',
+                title: 'WEIGHTS',
+                desc: 'Editorial judgements, not derived. Each card displays its own weight (×N%) above the value. Weights live in data/sources.json and only change with a commit.',
+              },
+              {
+                n: '04',
+                title: 'COMPOSITE',
+                desc: 'Weighted average of subscores, recomputed on every fetch. No smoothing. Failed fetchers do not silently overwrite — last-known-good value persists with a stale tag.',
+              },
+              {
+                n: '05',
+                title: 'LIMITATIONS',
+                desc: "Measures civilian conditions only. Does not capture military capacity, oil-and-gas revenue, or elite stability. Some inputs lag by weeks. Treat as a directional read, not a measurement.",
+              },
             ].map((m) => (
               <div key={m.n}>
                 <div className="method-num" style={{ color: 'var(--ink3)' }}>{m.n}</div>
@@ -239,7 +291,9 @@ export default function Dashboard({ sources }: { sources: Source[] }) {
       </div>
 
       <footer className="site-footer">
-        <div className="footer-note">P-INDEX IS AN INDEPENDENT COMPOSITE METRIC. DATA SOURCED FROM PUBLICLY AVAILABLE RESEARCH, INDICES, AND STATISTICAL AGENCIES. NOT AFFILIATED WITH ANY GOVERNMENT OR INSTITUTION.</div>
+        <div className="footer-note">
+          P-INDEX · daily civilian-conditions read on Russia · independent · not affiliated with any government · all sources linked.
+        </div>
         <div>P-INDEX © 2026</div>
       </footer>
     </>
