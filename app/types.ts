@@ -2,11 +2,13 @@ export type ChartType = 'line' | 'linezero' | 'bar' | 'heatmap' | 'twoline';
 export type Trend = 'up' | 'down' | 'stable';
 export type Cadence = 'daily' | 'monthly' | 'quarterly' | 'annual';
 export type DataQuality = 'official' | 'estimated' | 'modeled';
+export type Category = 'economy' | 'people' | 'institutions';
 
 export interface Source {
   id: string;
   name: string;
   label: string;
+  category: Category;
   score: number;
   weight: number;
   currentValue: string;
@@ -15,6 +17,8 @@ export interface Source {
   trend: Trend;
   data: number[];
   data2?: number[];
+  legend1?: string;
+  legend2?: string;
   tLabels: string[];
   description: string;
   sourceUrl: string;

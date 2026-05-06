@@ -22,7 +22,7 @@ interface LineProps {
 }
 
 export function LineChart({ data, labels, color = RED, uid = 'lc', showZero = false }: LineProps) {
-  const W = 300, H = 150, PL = 38, PR = 8, PT = 8, PB = 22;
+  const W = 300, H = 200, PL = 38, PR = 8, PT = 10, PB = 24;
   const [yMin, yMax] = niceRange(data);
   const yR = yMax - yMin;
   const xR = W - PL - PR;
@@ -75,12 +75,14 @@ interface TwoLineProps {
   data2: number[];
   labels: string[];
   uid?: string;
+  legend1?: string;
+  legend2?: string;
 }
 
-export function TwoLineChart({ data1, data2, labels, uid = 'tlc' }: TwoLineProps) {
+export function TwoLineChart({ data1, data2, labels, uid = 'tlc', legend1 = 'SHADOW', legend2 = 'OFFICIAL' }: TwoLineProps) {
   void uid;
   const allData = [...data1, ...data2];
-  const W = 300, H = 150, PL = 38, PR = 8, PT = 8, PB = 22;
+  const W = 300, H = 200, PL = 38, PR = 8, PT = 10, PB = 24;
   const [yMin, yMax] = niceRange(allData);
   const yR = yMax - yMin, xR = W - PL - PR, yR2 = H - PT - PB;
   const toX = (i: number) => PL + (i / (data1.length - 1)) * xR;
@@ -110,9 +112,9 @@ export function TwoLineChart({ data1, data2, labels, uid = 'tlc' }: TwoLineProps
       <path d={path1} fill="none" stroke={RED} strokeWidth="2" strokeLinejoin="round" />
       <path d={path2} fill="none" stroke={NAVY} strokeWidth="2" strokeLinejoin="round" strokeDasharray="5,3" />
       <line x1={PL + 2} x2={PL + 14} y1={PT + 5} y2={PT + 5} stroke={RED} strokeWidth="2" />
-      <text x={PL + 17} y={PT + 8} fontSize="7" fontFamily="Space Mono,monospace" fill="rgba(0,0,0,0.5)">SHADOW</text>
-      <line x1={PL + 60} x2={PL + 72} y1={PT + 5} y2={PT + 5} stroke={NAVY} strokeWidth="2" strokeDasharray="4,2" />
-      <text x={PL + 75} y={PT + 8} fontSize="7" fontFamily="Space Mono,monospace" fill="rgba(0,0,0,0.5)">OFFICIAL</text>
+      <text x={PL + 17} y={PT + 8} fontSize="7" fontFamily="Space Mono,monospace" fill="rgba(0,0,0,0.5)">{legend1}</text>
+      <line x1={PL + 70} x2={PL + 82} y1={PT + 5} y2={PT + 5} stroke={NAVY} strokeWidth="2" strokeDasharray="4,2" />
+      <text x={PL + 85} y={PT + 8} fontSize="7" fontFamily="Space Mono,monospace" fill="rgba(0,0,0,0.5)">{legend2}</text>
     </svg>
   );
 }
@@ -195,6 +197,6 @@ export function ChartRouter({ src }: { src: Source }) {
   if (src.chartType === 'bar') return <BarChart data={src.data} labels={src.tLabels} uid={src.id} />;
   if (src.chartType === 'linezero') return <LineChart data={src.data} labels={src.tLabels} uid={src.id} showZero={true} />;
   if (src.chartType === 'heatmap') return <HeatmapChart data={src.data} labels={src.tLabels} />;
-  if (src.chartType === 'twoline' && src.data2) return <TwoLineChart data1={src.data} data2={src.data2} labels={src.tLabels} uid={src.id} />;
+  if (src.chartType === 'twoline' && src.data2) return <TwoLineChart data1={src.data} data2={src.data2} labels={src.tLabels} uid={src.id} legend1={src.legend1} legend2={src.legend2} />;
   return <LineChart data={src.data} labels={src.tLabels} color={src.score >= 75 ? RED : ORA} uid={src.id} />;
 }

@@ -33,22 +33,19 @@ function fmtRelative(iso: string) {
 }
 
 function Card({ src, open, onToggle }: { src: Source; open: boolean; onToggle: () => void }) {
+  const trendLabel = src.trend === 'up' ? '↑ Worsening' : src.trend === 'down' ? '↓ Declining' : '— Stable';
   return (
     <div className={`card${open ? ' open' : ''}`} onClick={onToggle}>
-      <div className="card-top">
+      <div className="card-eyebrow">
         <span className="card-name">{src.name}</span>
-        <div className="card-meta">
+        <span className="card-meta">
           <span className={`cadence-tag cadence-${src.cadence}`}>{src.cadence}</span>
           <span className="card-wt">×{src.weight}%</span>
-        </div>
-      </div>
-      <div className="card-sublabel">{src.label}</div>
-      <div className="card-score-row">
-        <span className={`card-score ${scoreClass(src.score)}`}>{src.score}</span>
-        <span className="card-current">{src.currentValue}</span>
-        <span className={`card-delta ${src.trend === 'up' ? 'up' : src.trend === 'down' ? 'down' : 'stable'}`}>
-          {src.trend === 'up' ? '↑ Worsening' : src.trend === 'down' ? '↓ Declining' : '— Stable'}
         </span>
+      </div>
+      <div className="card-hero">
+        <span className={`card-current ${scoreClass(src.score)}`}>{src.currentValue}</span>
+        <span className={`card-delta ${src.trend}`}>{trendLabel}</span>
       </div>
       <ChartRouter src={src} />
       <div className="card-source-line">
@@ -77,6 +74,26 @@ function Card({ src, open, onToggle }: { src: Source; open: boolean; onToggle: (
   );
 }
 
+function CardSection({
+  title,
+  blurb,
+  children,
+}: {
+  title: string;
+  blurb: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="card-section">
+      <div className="card-section-head">
+        <span className="card-section-title">{title}</span>
+        <span className="card-section-blurb">{blurb}</span>
+      </div>
+      <div className="card-grid">{children}</div>
+    </div>
+  );
+}
+
 function ScaleBar({ value }: { value: number }) {
   const zones = ['OPTIMAL', 'MODERATE', 'CONCERNING', 'CRITICAL', 'SEVERE'];
   return (
@@ -90,47 +107,157 @@ function ScaleBar({ value }: { value: number }) {
   );
 }
 
-function HeroSidebar({ sources }: { sources: Source[] }) {
-  const sorted = [...sources].sort((a, b) => b.score * b.weight - a.score * a.weight).slice(0, 5);
-  const maxContrib = sorted[0].score * sorted[0].weight;
-  const spark = [68.2, 69.1, 70.4, 71.2, 70.8, 71.6, 72.0, 72.9, 73.4];
-  const sparkW = 240, sparkH = 40, pad = 2;
-  const sMin = Math.min(...spark) - 1;
-  const sMax = Math.max(...spark) + 1;
-  const sparkPts = spark
-    .map((v, i) => {
-      const x = pad + (i / (spark.length - 1)) * (sparkW - pad * 2);
-      const y = pad + (1 - (v - sMin) / (sMax - sMin)) * (sparkH - pad * 2);
-      return `${x},${y}`;
-    })
-    .join(' ');
+function IndexDataChart({ composite, releaseDate }: { composite: number; releaseDate: string }) {
+  // Chronological (oldest → today). Deterministic so SSR matches CSR.
+  const series = [41.5, 42.0, 42.8, 43.3, 42.9, 42.1, composite];
+  const W = 220, H = 170, PL = 22, PR = 14, PT = 22, PB = 26;
+  const xR = W - PL - PR, yR = H - PT - PB;
+  const min = Math.min(...series) - 0.6;
+  const max = Math.max(...series) + 0.9;
+  const yspan = max - min;
+  const baseDate = new Date(releaseDate + 'T00:00:00Z');
+  const points = series.map((v, i) => {
+    const x = PL + (i / (series.length - 1)) * xR;
+    const y = PT + (1 - (v - min) / yspan) * yR;
+    const d = new Date(baseDate);
+    d.setUTCDate(d.getUTCDate() - (series.length - 1 - i));
+    const isToday = i === series.length - 1;
+    const label = isToday ? 'TODAY' : `${d.getUTCDate()}`;
+    return { x, y, v, label, isToday };
+  });
+  const baseY = H - PB;
 
   return (
-    <div>
-      <div className="hero-sidebar-title">RECENT TREND</div>
-      <svg viewBox={`0 0 ${sparkW} ${sparkH}`} style={{ width: '100%', height: sparkH, display: 'block', marginBottom: 14 }}>
-        <polyline points={sparkPts} fill="none" stroke={RED} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-        {spark.map((v, i) => {
-          const x = pad + (i / (spark.length - 1)) * (sparkW - pad * 2);
-          const y = pad + (1 - (v - sMin) / (sMax - sMin)) * (sparkH - pad * 2);
-          return i === spark.length - 1 ? <circle key={i} cx={x} cy={y} r="3" fill={RED} /> : null;
-        })}
-      </svg>
-      <div className="hero-sidebar-title">TOP DRIVERS</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {sorted.map((s) => {
-          const pct = ((s.score * s.weight) / maxContrib) * 100;
-          const col = s.score >= 75 ? RED : s.score >= 55 ? ORA : GREEN;
-          return (
-            <div className="driver-row" key={s.id}>
-              <span className="driver-name">{s.name.split(' ').slice(0, 2).join(' ')}</span>
-              <div className="driver-bar-bg">
-                <div className="driver-bar-fill" style={{ width: `${pct}%`, background: col }} />
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      style={{ width: '100%', height: '100%', display: 'block' }}
+    >
+      <defs>
+        <linearGradient id="idxStem" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1c2340" stopOpacity="0.32" />
+          <stop offset="100%" stopColor="#1c2340" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="idxStemToday" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#e31c0e" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#e31c0e" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* baseline */}
+      <line x1={PL - 4} x2={W - PR + 4} y1={baseY} y2={baseY} stroke="rgba(0,0,0,0.18)" strokeWidth="1" />
+      {/* stems with vertical fade — the gimmick: each day "drips" toward the baseline */}
+      {points.map((p, i) => (
+        <rect
+          key={`stem${i}`}
+          x={p.x - (p.isToday ? 1.2 : 0.6)}
+          y={p.y}
+          width={p.isToday ? 2.4 : 1.2}
+          height={baseY - p.y}
+          fill={p.isToday ? 'url(#idxStemToday)' : 'url(#idxStem)'}
+        />
+      ))}
+      {/* dashed pulse connector through the dots */}
+      <polyline
+        points={points.map((p) => `${p.x},${p.y}`).join(' ')}
+        fill="none"
+        stroke="rgba(28,35,64,0.32)"
+        strokeWidth="1"
+        strokeDasharray="2.5,2.5"
+        strokeLinecap="round"
+      />
+      {/* dots */}
+      {points.map((p, i) => (
+        <g key={`dot${i}`}>
+          {p.isToday && (
+            <circle cx={p.x} cy={p.y} r="9" fill="#e31c0e" opacity="0.18">
+              <animate attributeName="r" values="6;11;6" dur="2.2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.28;0;0.28" dur="2.2s" repeatCount="indefinite" />
+            </circle>
+          )}
+          <circle
+            cx={p.x}
+            cy={p.y}
+            r={p.isToday ? 4.2 : 2.4}
+            fill={p.isToday ? '#e31c0e' : '#1c2340'}
+            stroke={p.isToday ? '#fff' : 'none'}
+            strokeWidth={p.isToday ? 1.5 : 0}
+          />
+        </g>
+      ))}
+      {/* today value label */}
+      {points
+        .filter((p) => p.isToday)
+        .map((p, i) => (
+          <text
+            key={i}
+            x={p.x}
+            y={p.y - 11}
+            textAnchor="middle"
+            fontSize="11"
+            fontWeight="700"
+            fontFamily="Space Mono,monospace"
+            fill="#e31c0e"
+          >
+            {p.v.toFixed(1)}
+          </text>
+        ))}
+      {/* x labels */}
+      {points.map((p, i) => (
+        <text
+          key={`xl${i}`}
+          x={p.x}
+          y={H - PB + 14}
+          textAnchor="middle"
+          fontSize={p.isToday ? 8 : 7.5}
+          fontFamily="Space Mono,monospace"
+          fill={p.isToday ? '#e31c0e' : 'rgba(0,0,0,0.42)'}
+          fontWeight={p.isToday ? 700 : 400}
+          letterSpacing={p.isToday ? '1.4' : '0.6'}
+        >
+          {p.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+function HeroSidebar({
+  sources,
+  composite,
+  releaseDate,
+}: {
+  sources: Source[];
+  composite: number;
+  releaseDate: string;
+}) {
+  const sorted = [...sources].sort((a, b) => b.score * b.weight - a.score * a.weight).slice(0, 5);
+  const maxContrib = sorted[0].score * sorted[0].weight;
+
+  return (
+    <div className="hero-sidebar-grid">
+      <div className="sidebar-col">
+        <div className="hero-sidebar-title">Index Data</div>
+        <div className="index-data-chart">
+          <IndexDataChart composite={composite} releaseDate={releaseDate} />
+        </div>
+      </div>
+      <div className="sidebar-col">
+        <div className="hero-sidebar-title">Top Drivers</div>
+        <div className="driver-list">
+          {sorted.map((s) => {
+            const pct = ((s.score * s.weight) / maxContrib) * 100;
+            const col = s.score >= 75 ? RED : s.score >= 55 ? ORA : GREEN;
+            return (
+              <div className="driver-row" key={s.id}>
+                <span className="driver-name">{s.name.split(' ').slice(0, 2).join(' ')}</span>
+                <div className="driver-bar-bg">
+                  <div className="driver-bar-fill" style={{ width: `${pct}%`, background: col }} />
+                </div>
+                <span className="driver-score" style={{ color: col }}>{s.score}</span>
               </div>
-              <span className="driver-score" style={{ color: col }}>{s.score}</span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -218,7 +345,7 @@ export default function Dashboard({ release }: { release: Release }) {
               </div>
             </div>
             <div className="hero-sidebar">
-              <HeroSidebar sources={sources} />
+              <HeroSidebar sources={sources} composite={release.composite} releaseDate={release.releaseDate} />
             </div>
           </div>
           <ScaleBar value={pIndex} />
@@ -235,11 +362,40 @@ export default function Dashboard({ release }: { release: Release }) {
             <span className="section-hint">CLICK ANY SOURCE TO EXPAND</span>
           </div>
           <DataSectionBg />
-          <div className="card-grid">
-            {sources.map((src) => (
-              <Card key={src.id} src={src} open={openId === src.id} onToggle={() => setOpenId(openId === src.id ? null : src.id)} />
-            ))}
-          </div>
+          {(
+            [
+              {
+                key: 'economy' as const,
+                title: 'ECONOMY',
+                blurb: 'Output, prices, currency, credit, wages — the visible cost of the war.',
+              },
+              {
+                key: 'people' as const,
+                title: 'PEOPLE',
+                blurb: 'Sentiment, polling, departures, news tone — how the population is reading the situation.',
+              },
+              {
+                key: 'institutions' as const,
+                title: 'INSTITUTIONS',
+                blurb: 'Press, courts, statistics, defense — slow-moving structural metrics.',
+              },
+            ]
+          ).map(({ key, title, blurb }) => {
+            const items = sources.filter((s) => s.category === key);
+            if (items.length === 0) return null;
+            return (
+              <CardSection key={key} title={title} blurb={blurb}>
+                {items.map((src) => (
+                  <Card
+                    key={src.id}
+                    src={src}
+                    open={openId === src.id}
+                    onToggle={() => setOpenId(openId === src.id ? null : src.id)}
+                  />
+                ))}
+              </CardSection>
+            );
+          })}
         </div>
       </div>
 
@@ -257,7 +413,7 @@ export default function Dashboard({ release }: { release: Release }) {
               {
                 n: '01',
                 title: 'INPUTS',
-                desc: '9 indicators across economy, sentiment, press, and mobility. Each card links to its primary public source. Cadence varies — daily for FX and tone, monthly for inflation and polls, annual for Heritage and RSF.',
+                desc: '14 indicators across economy, sentiment, press, governance, and mobility. Each card links to its primary public source. Cadence varies — daily for FX, policy rate, and news tone, monthly for inflation, wages, and polls, annual for RSF, Heritage, TI, and SIPRI.',
               },
               {
                 n: '02',
@@ -280,9 +436,11 @@ export default function Dashboard({ release }: { release: Release }) {
                 desc: "Measures civilian conditions only. Does not capture military capacity, oil-and-gas revenue, or elite stability. Some inputs lag by weeks. Treat as a directional read, not a measurement.",
               },
             ].map((m) => (
-              <div key={m.n}>
-                <div className="method-num" style={{ color: 'var(--ink3)' }}>{m.n}</div>
-                <div className="method-title">{m.title}</div>
+              <div key={m.n} className="method-card">
+                <div className="method-head">
+                  <span className="method-num">{m.n}</span>
+                  <span className="method-title">{m.title}</span>
+                </div>
                 <div className="method-desc">{m.desc}</div>
               </div>
             ))}
