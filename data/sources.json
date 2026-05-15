@@ -1,6 +1,6 @@
 {
-  "releaseDate": "2026-05-14",
-  "lastRunAt": "2026-05-14T05:44:06.150Z",
+  "releaseDate": "2026-05-15",
+  "lastRunAt": "2026-05-15T05:51:50.587Z",
   "composite": 38.1,
   "picture": null,
   "sources": [
@@ -33,7 +33,7 @@
       "whyItMatters": "Headline GDP is now defense-spending-led; the civilian economy looks worse than the topline implies.",
       "cadence": "quarterly",
       "dataQuality": "official",
-      "lastFetched": "2026-05-14"
+      "lastFetched": "2026-05-15"
     },
     {
       "id": "inflation",
@@ -87,10 +87,10 @@
       "name": "RUBLE / USD",
       "label": "Monthly close, ₽ per $1",
       "category": "economy",
-      "score": 22.2,
+      "score": 21.9,
       "weight": 8,
-      "currentValue": "73.3 ₽",
-      "rawValue": 73.34,
+      "currentValue": "73.1 ₽",
+      "rawValue": 73.14,
       "chartType": "line",
       "trend": "down",
       "data": [
@@ -127,7 +127,7 @@
       "whyItMatters": "The ruble is the only daily-published indicator the Russian state can't easily massage — it's a real-time confidence vote.",
       "cadence": "daily",
       "dataQuality": "official",
-      "lastFetched": "2026-05-14"
+      "lastFetched": "2026-05-15"
     },
     {
       "id": "keyrate",
