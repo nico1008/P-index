@@ -1,6 +1,6 @@
 {
-  "releaseDate": "2026-06-07",
-  "lastRunAt": "2026-06-07T06:19:40.611Z",
+  "releaseDate": "2026-06-08",
+  "lastRunAt": "2026-06-08T06:39:01.952Z",
   "composite": 38,
   "picture": null,
   "sources": [
@@ -33,7 +33,7 @@
       "whyItMatters": "Headline GDP is now defense-spending-led; the civilian economy looks worse than the topline implies.",
       "cadence": "quarterly",
       "dataQuality": "official",
-      "lastFetched": "2026-06-07"
+      "lastFetched": "2026-06-08"
     },
     {
       "id": "inflation",
