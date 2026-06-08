@@ -18,6 +18,8 @@ export function HeroBg() {
       viewBox="0 0 1400 440"
       preserveAspectRatio="xMidYMid slice"
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+      aria-hidden="true"
+      role="presentation"
     >
       {[160, 220, 280, 340, 400, 460].map((r, i) => (
         <circle key={i} cx={1360} cy={-30} r={r} fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="1" />
@@ -56,6 +58,7 @@ export function SpikyEye({ size = 120, opacity = 0.13, rotate = 0, which = 0, st
 
   return (
     <div
+      aria-hidden="true"
       style={{
         width: imgW,
         height: eyeH,
@@ -98,7 +101,7 @@ interface EyeSpec {
 
 function EyeLayer({ eyes }: { eyes: EyeSpec[] }) {
   return (
-    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
       {eyes.map((e, i) => (
         <div
           key={i}

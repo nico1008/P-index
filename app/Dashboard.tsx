@@ -5,13 +5,7 @@ import type { Release, Source } from './types';
 import { ChartRouter } from './charts';
 import { DataSectionBg, HeroBg, MethodSectionBg } from './decorations';
 
-const RED = '#e31c0e';
-const ORA = '#f55a00';
-const GREEN = '#16a34a';
-
-function scoreClass(s: number) {
-  return s >= 75 ? 'score-hi' : s >= 55 ? 'score-md' : 'score-lo';
-}
+const INK = '#0d0c0b';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -20,56 +14,58 @@ function fmtDate(iso: string) {
   return `${parseInt(d, 10)} ${MONTHS[parseInt(m, 10) - 1]} ${y}`;
 }
 
-function fmtRelative(iso: string) {
-  if (!iso) return '';
-  const then = new Date(iso + 'T00:00:00Z').getTime();
-  const now = Date.now();
-  const days = Math.round((now - then) / 86400000);
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 30) return `${days} days ago`;
-  if (days < 365) return `${Math.round(days / 30)} mo ago`;
-  return `${Math.round(days / 365)} yr ago`;
-}
-
 function Card({ src, open, onToggle }: { src: Source; open: boolean; onToggle: () => void }) {
-  const trendLabel = src.trend === 'up' ? '↑ Worsening' : src.trend === 'down' ? '↓ Declining' : '— Stable';
+  const trendLabel = src.trend === 'up' ? '↑ Rising' : src.trend === 'down' ? '↓ Falling' : '— Stable';
+  const detailId = `card-detail-${src.id}`;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggle();
+    }
+  };
+  const stopBoth = (e: React.SyntheticEvent) => e.stopPropagation();
   return (
-    <div className={`card${open ? ' open' : ''}`} onClick={onToggle}>
+    <div
+      className={`card${open ? ' open' : ''}`}
+      onClick={onToggle}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-expanded={open}
+      aria-controls={detailId}
+    >
       <div className="card-eyebrow">
-        <span className="card-name">{src.name}</span>
-        <span className="card-meta">
-          <span className={`cadence-tag cadence-${src.cadence}`}>{src.cadence}</span>
-          <span className="card-wt">×{src.weight}%</span>
-        </span>
+        <h4 className="card-name">
+          {src.name}
+          <span className={`card-delta ${src.trend}`}>{trendLabel}</span>
+        </h4>
+        <span className="card-wt">×{src.weight}%</span>
       </div>
       <div className="card-hero">
-        <span className={`card-current ${scoreClass(src.score)}`}>{src.currentValue}</span>
-        <span className={`card-delta ${src.trend}`}>{trendLabel}</span>
+        <span className="card-current">{src.currentValue}</span>
       </div>
       <ChartRouter src={src} />
       <div className="card-source-line">
         <span className="card-source">{src.sourceName}</span>
-        <span className="card-sep">·</span>
-        <span className="card-fetched">{fmtRelative(src.lastFetched)}</span>
         {src.staleSince && <span className="stale-tag">stale</span>}
       </div>
       {open && (
-        <div className="expand-section">
-          <div className="why-matters">{src.whyItMatters}</div>
+        <div className="expand-section" id={detailId}>
           <div className="card-desc">{src.description}</div>
           <a
             className="card-source-link"
             href={src.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={stopBoth}
+            onKeyDown={stopBoth}
+            aria-label={`Source: ${src.sourceName} (opens in new tab)`}
           >
             Source · {src.sourceName} →
           </a>
         </div>
       )}
-      <span className="card-arrow">{open ? '▲' : '▼'}</span>
+      <span className="card-arrow" aria-hidden="true">{open ? '▲' : '▼'}</span>
     </div>
   );
 }
@@ -86,7 +82,7 @@ function CardSection({
   return (
     <div className="card-section">
       <div className="card-section-head">
-        <span className="card-section-title">{title}</span>
+        <h3 className="card-section-title">{title}</h3>
         <span className="card-section-blurb">{blurb}</span>
       </div>
       <div className="card-grid">{children}</div>
@@ -109,6 +105,7 @@ function ScaleBar({ value }: { value: number }) {
 
 function IndexDataChart({ composite, releaseDate }: { composite: number; releaseDate: string }) {
   // Chronological (oldest → today). Deterministic so SSR matches CSR.
+  // TODO: replace placeholder series with release.compositeHistory once historical composites are persisted.
   const series = [41.5, 42.0, 42.8, 43.3, 42.9, 42.1, composite];
   const W = 220, H = 170, PL = 22, PR = 14, PT = 22, PB = 26;
   const xR = W - PL - PR, yR = H - PT - PB;
@@ -196,7 +193,7 @@ function IndexDataChart({ composite, releaseDate }: { composite: number; release
             fontSize="11"
             fontWeight="700"
             fontFamily="Space Mono,monospace"
-            fill="#e31c0e"
+            fill={INK}
           >
             {p.v.toFixed(1)}
           </text>
@@ -210,7 +207,7 @@ function IndexDataChart({ composite, releaseDate }: { composite: number; release
           textAnchor="middle"
           fontSize={p.isToday ? 8 : 7.5}
           fontFamily="Space Mono,monospace"
-          fill={p.isToday ? '#e31c0e' : 'rgba(0,0,0,0.42)'}
+          fill={INK}
           fontWeight={p.isToday ? 700 : 400}
           letterSpacing={p.isToday ? '1.4' : '0.6'}
         >
@@ -246,14 +243,13 @@ function HeroSidebar({
         <div className="driver-list">
           {sorted.map((s) => {
             const pct = ((s.score * s.weight) / maxContrib) * 100;
-            const col = s.score >= 75 ? RED : s.score >= 55 ? ORA : GREEN;
             return (
               <div className="driver-row" key={s.id}>
                 <span className="driver-name">{s.name.split(' ').slice(0, 2).join(' ')}</span>
                 <div className="driver-bar-bg">
-                  <div className="driver-bar-fill" style={{ width: `${pct}%`, background: col }} />
+                  <div className="driver-bar-fill" style={{ width: `${pct}%`, background: INK }} />
                 </div>
-                <span className="driver-score" style={{ color: col }}>{s.score}</span>
+                <span className="driver-score">{s.score}</span>
               </div>
             );
           })}
@@ -265,7 +261,7 @@ function HeroSidebar({
 
 export default function Dashboard({ release }: { release: Release }) {
   const sources = release.sources;
-  const [pIndex, setPIndex] = useState(release.composite);
+  const pIndex = release.composite;
   const [displayVal, setDisplayVal] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -284,19 +280,13 @@ export default function Dashboard({ release }: { release: Release }) {
     return () => cancelAnimationFrame(frame);
   }, [pIndex]);
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setPIndex((v) => parseFloat(Math.max(0, Math.min(100, v + (Math.random() - 0.48) * 0.8)).toFixed(1)));
-    }, 18000);
-    return () => clearInterval(id);
-  }, []);
+  // Intentionally no random-drift loop — composite is updated by the data pipeline,
+  // not by client-side animation. (See methodology section.)
 
   const intPart = Math.floor(displayVal).toString().padStart(2, '0');
   const decDigit = Math.round((displayVal % 1) * 10);
   const label =
     pIndex >= 80 ? 'SEVERE' : pIndex >= 60 ? 'CRITICAL' : pIndex >= 40 ? 'CONCERNING' : pIndex >= 20 ? 'MODERATE' : 'OPTIMAL';
-
-  const wiredCount = sources.filter((s) => !s.staleSince && (s.id === 'gdp' || s.id === 'ruble' || s.id === 'news')).length;
 
   return (
     <>
@@ -306,41 +296,36 @@ export default function Dashboard({ release }: { release: Release }) {
           P-INDEX SYSTEM · RUSSIA
         </div>
         <div className="header-right">
-          AUTO-REFRESH DAILY · LAST RUN {fmtDate(release.releaseDate)}
+          LAST RUN · {fmtDate(release.releaseDate).toUpperCase()}
         </div>
       </header>
 
       <section className="hero">
         <HeroBg />
         <div className="hero-content">
-          <div className="eyebrow">P-INDEX · DAILY REFRESH 02:00 UTC</div>
           <div className="hero-row">
-            <div className="big-num">
-              <span>{intPart}</span>
-              <span className="dec-dot">.</span>
-              <span className="dec-digit">{decDigit}</span>
-              <span className="slash">/ 100</span>
-            </div>
+            <h1
+              className="big-num"
+              aria-label={`P-INDEX score ${displayVal.toFixed(1)} of 100, ${label}`}
+              aria-live="off"
+            >
+              <span aria-hidden="true">{intPart}</span>
+              <span className="dec-dot" aria-hidden="true">.</span>
+              <span className="dec-digit" aria-hidden="true">{decDigit}</span>
+              <span className="slash" aria-hidden="true">/ 100</span>
+            </h1>
             <div className="hero-aside">
               <div className="status-pill">
                 <div className="pulse-dot" />
                 {label}
               </div>
               <div className="hero-desc">
-                Daily-refreshed read of civilian conditions in Russia — economy, sentiment, press, mobility — beyond the official numbers. Higher = more distress.
+                Composite index of 14 indicators across economy, society, and institutions in Russia. Refreshed daily. Score range 0–100.
               </div>
               <div className="kpi-row">
                 <div className="kpi">
                   <span className="kpi-label">Indicators</span>
                   <span className="kpi-val">{sources.length}</span>
-                </div>
-                <div className="kpi">
-                  <span className="kpi-label">Live-wired</span>
-                  <span className="kpi-val">{wiredCount} / {sources.length}</span>
-                </div>
-                <div className="kpi">
-                  <span className="kpi-label">Refreshed</span>
-                  <span className="kpi-val">{fmtRelative(release.releaseDate).toUpperCase()}</span>
                 </div>
               </div>
             </div>
@@ -357,9 +342,8 @@ export default function Dashboard({ release }: { release: Release }) {
           <div className="section-head">
             <div className="section-label">
               <span className="section-num">02</span>
-              <span className="section-title">Data Sources</span>
+              <h2 className="section-title">Data Sources</h2>
             </div>
-            <span className="section-hint">CLICK ANY SOURCE TO EXPAND</span>
           </div>
           <DataSectionBg />
           {(
@@ -367,17 +351,17 @@ export default function Dashboard({ release }: { release: Release }) {
               {
                 key: 'economy' as const,
                 title: 'ECONOMY',
-                blurb: 'Output, prices, currency, credit, wages — the visible cost of the war.',
+                blurb: 'Output, prices, currency, credit, wages.',
               },
               {
                 key: 'people' as const,
                 title: 'PEOPLE',
-                blurb: 'Sentiment, polling, departures, news tone — how the population is reading the situation.',
+                blurb: 'Sentiment, polling, departures, news tone.',
               },
               {
                 key: 'institutions' as const,
                 title: 'INSTITUTIONS',
-                blurb: 'Press, courts, statistics, defense — slow-moving structural metrics.',
+                blurb: 'Press, courts, statistics, defense.',
               },
             ]
           ).map(({ key, title, blurb }) => {
@@ -404,7 +388,7 @@ export default function Dashboard({ release }: { release: Release }) {
           <div className="section-head">
             <div className="section-label">
               <span className="section-num">03</span>
-              <span className="section-title">Methodology</span>
+              <h2 className="section-title">Methodology</h2>
             </div>
           </div>
           <MethodSectionBg />
@@ -432,8 +416,8 @@ export default function Dashboard({ release }: { release: Release }) {
               },
               {
                 n: '05',
-                title: 'LIMITATIONS',
-                desc: "Measures civilian conditions only. Does not capture military capacity, oil-and-gas revenue, or elite stability. Some inputs lag by weeks. Treat as a directional read, not a measurement.",
+                title: 'SCOPE',
+                desc: 'Includes civilian, economic, and institutional indicators. Does not include military capacity, hydrocarbon revenue, or political stability. Some inputs lag by weeks.',
               },
             ].map((m) => (
               <div key={m.n} className="method-card">
@@ -450,9 +434,9 @@ export default function Dashboard({ release }: { release: Release }) {
 
       <footer className="site-footer">
         <div className="footer-note">
-          P-INDEX · daily civilian-conditions read on Russia · independent · not affiliated with any government · all sources linked.
+          P-INDEX · daily index of {sources.length} indicators on Russia · all sources linked.
         </div>
-        <div>P-INDEX © 2026</div>
+        <div>P-INDEX © {new Date().getFullYear()}</div>
       </footer>
     </>
   );
