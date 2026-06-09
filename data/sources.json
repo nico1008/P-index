@@ -1,7 +1,7 @@
 {
-  "releaseDate": "2026-06-08",
-  "lastRunAt": "2026-06-08T06:39:01.952Z",
-  "composite": 38,
+  "releaseDate": "2026-06-09",
+  "lastRunAt": "2026-06-09T06:05:43.376Z",
+  "composite": 37.9,
   "picture": null,
   "sources": [
     {
@@ -33,7 +33,7 @@
       "whyItMatters": "Headline GDP is now defense-spending-led; the civilian economy looks worse than the topline implies.",
       "cadence": "quarterly",
       "dataQuality": "official",
-      "lastFetched": "2026-06-08"
+      "lastFetched": "2026-06-09"
     },
     {
       "id": "inflation",
@@ -87,10 +87,10 @@
       "name": "RUBLE / USD",
       "label": "Monthly close, ₽ per $1",
       "category": "economy",
-      "score": 22.5,
+      "score": 22.1,
       "weight": 8,
-      "currentValue": "73.5 ₽",
-      "rawValue": 73.47,
+      "currentValue": "73.3 ₽",
+      "rawValue": 73.26,
       "chartType": "line",
       "trend": "down",
       "data": [
@@ -127,7 +127,7 @@
       "whyItMatters": "The ruble is the only daily-published indicator the Russian state can't easily massage — it's a real-time confidence vote.",
       "cadence": "daily",
       "dataQuality": "official",
-      "lastFetched": "2026-06-06"
+      "lastFetched": "2026-06-09"
     },
     {
       "id": "keyrate",
@@ -385,10 +385,10 @@
       "name": "NEWS NEGATIVITY",
       "label": "Negative-tone share of Russia events",
       "category": "people",
-      "score": 60.7,
+      "score": 58.9,
       "weight": 11,
-      "currentValue": "61%",
-      "rawValue": 60.7,
+      "currentValue": "59%",
+      "rawValue": 58.9,
       "chartType": "line",
       "trend": "down",
       "data": [
@@ -425,8 +425,7 @@
       "whyItMatters": "When state outlets emphasise fear and conflict, it tends to lead internal mobilisation or repression cycles.",
       "cadence": "daily",
       "dataQuality": "modeled",
-      "lastFetched": "2026-05-27",
-      "staleSince": "2026-05-28"
+      "lastFetched": "2026-06-09"
     },
     {
       "id": "rosstat",
