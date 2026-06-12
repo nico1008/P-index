@@ -300,13 +300,14 @@ export default function Dashboard({ release }: { release: Release }) {
         </div>
       </header>
 
+      <main>
       <section className="hero">
         <HeroBg />
         <div className="hero-content">
           <div className="hero-row">
             <h1
               className="big-num"
-              aria-label={`P-INDEX score ${displayVal.toFixed(1)} of 100, ${label}`}
+              aria-label={`P-INDEX score ${pIndex.toFixed(1)} of 100, ${label}`}
               aria-live="off"
             >
               <span aria-hidden="true">{intPart}</span>
@@ -431,6 +432,7 @@ export default function Dashboard({ release }: { release: Release }) {
           </div>
         </div>
       </div>
+      </main>
 
       <footer className="site-footer">
         <div className="footer-note">
